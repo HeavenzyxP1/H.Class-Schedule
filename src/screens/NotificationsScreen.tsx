@@ -1,58 +1,119 @@
-import React from 'react';
-import { ScreenType } from '../App';
+import React, { useMemo } from 'react';
+import { ScreenType, Note } from '../App';
 
-export default function NotificationsScreen({ onNavigate }: { onNavigate: (s: ScreenType) => void }) {
+export default function NotificationsScreen({ onNavigate, notes }: { onNavigate: (s: ScreenType, id?: string) => void, notes: Note[] }) {
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const groupedNotes = useMemo(() => {
+    const filtered = notes.filter(note => 
+      note.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    const sorted = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
+    const groups: Record<string, { date: string, dayOfWeek: string, notes: Note[] }> = {};
+    
+    sorted.forEach(note => {
+      const key = `${note.date} ${note.dayOfWeek}`;
+      if (!groups[key]) {
+        groups[key] = { date: note.date, dayOfWeek: note.dayOfWeek, notes: [] };
+      }
+      groups[key].notes.push(note);
+    });
+    
+    return Object.values(groups);
+  }, [searchQuery, notes]);
+
   return (
-    <div className="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden pb-10">
-      <header className="sticky top-0 z-50 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between">
-        <div onClick={() => onNavigate('schedule')} className="text-primary flex size-12 shrink-0 items-center justify-start cursor-pointer">
-          <span className="material-symbols-outlined text-3xl">arrow_back</span>
-        </div>
-        <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] flex-1">通知</h2>
-        <div className="size-12 shrink-0"></div>
+    <div className="relative flex min-h-screen w-full max-w-md mx-auto flex-col liquid-bg overflow-x-hidden pb-10">
+      {/* Navigation Header */}
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+        <button 
+          onClick={() => onNavigate('schedule')}
+          className="flex items-center justify-center size-10 rounded-full text-primary hover:bg-primary/10 transition-colors"
+        >
+          <span className="material-symbols-outlined text-[28px]">arrow_back</span>
+        </button>
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">通知</h1>
+        <div className="size-10"></div>
       </header>
 
-      <main className="flex-1 px-4 py-6 space-y-6 relative z-10">
-        <div className="liquid-glass rounded-xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer">
-          <div className="flex flex-col">
-            <div className="w-full h-40 bg-primary/10 relative overflow-hidden" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDi1yoOoIPHLheyv4LEwAD6XJLs3NAyH4rSwxU28-fiJdbFhRw_nqFYIfOthwjoX5J3UbBeIOzeqeSwvA_CeyJAA1t95joykYuDCe9LdJqO6h8ruPKWug3I7AxPOvYVEmGOMhLII8I1HjQjar44n4mH03YcWq5VLibiVYkwI-5HoG3VudY3rt-B4D-UL5j7NMbKkSAdQLay-ghHpGhB-b-x_BZnO7LqSs3d0mnoCDUjz7UMp09xhtcywSsIi7_8X785rQpORrPksGTJ')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-              <div className="absolute top-3 right-3 px-2 py-1 bg-primary text-white text-[10px] font-bold rounded uppercase tracking-wider">
-                NEW
-              </div>
-            </div>
-            <div className="p-4 flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <h2 className="text-lg font-bold">更新通知</h2>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">10:30 AM</span>
-              </div>
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                版本 2.0.1 现已推出。新增了深色模式支持和更流畅的课表视图切换功能，快来体验吧！
-              </p>
-              <div className="mt-2 flex items-center text-primary text-sm font-semibold">
-                立即查看 <span className="material-symbols-outlined text-sm ml-1">chevron_right</span>
-              </div>
-            </div>
-          </div>
+      {/* Search Bar */}
+      <div className="px-5 py-2">
+        <div className="relative flex items-center group">
+          <span className="material-symbols-outlined absolute left-4 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+          <input 
+            className="w-full h-12 pl-12 pr-4 bg-white/50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder:text-slate-400 text-sm outline-none" 
+            placeholder="搜索随记内容..." 
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+      </div>
 
-        <div onClick={() => onNavigate('view-note')} className="liquid-glass rounded-xl overflow-hidden transition-all duration-300 active:scale-95 cursor-pointer">
-          <div className="flex flex-col">
-            <div className="w-full h-40 bg-primary/10 relative overflow-hidden" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAr8B-QABCNFKcwM3L6VS0DKiKx-zNr4McSYfnhcx1ReXTDpI8Woo4-fX2CV3vM7ADwI19Ld5mIApFT5fb-m75DFjzw6XDevIWYHRCHMUbS2w3IVxlNkn10dwbL0JdmxPz9ob22A8iXTVmXe6hyzvsBA1Iy3nAuGs5-jvRD_7YejDMPmcwgtRi9i1TujoyhfCjP6Ca6S9nx9CbVWuoeFIX7gKBkpvSkLI5j1XWbUyvMwLrpzdSatLzw6R6ALehtw0RKd2z7TOlS25Nk')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
-            </div>
-            <div className="p-4 flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <h2 className="text-lg font-bold">随记通知</h2>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">昨天 14:20</span>
-              </div>
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                您在“高级数学”课程中记录了一条关于“拉格朗日中值定理”的笔记，点击查看详情。
-              </p>
-              <div className="mt-2 flex items-center text-primary text-sm font-semibold">
-                打开随记 <span className="material-symbols-outlined text-sm ml-1">chevron_right</span>
-              </div>
-            </div>
+      <main className="flex-1">
+        {groupedNotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center mt-20 text-slate-400">
+            <span className="material-symbols-outlined text-6xl mb-4 opacity-20">search_off</span>
+            <p>没有找到相关随记</p>
           </div>
-        </div>
+        ) : (
+          groupedNotes.map((group, groupIdx) => (
+            <div key={groupIdx} className="mt-6 px-5">
+              <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-xs">calendar_today</span>
+                {group.date} {group.dayOfWeek}
+              </h2>
+              
+              {group.notes.map(note => (
+                <div 
+                  key={note.id} 
+                  onClick={() => onNavigate('view-note', note.id)}
+                  className="frosted-glass rounded-2xl p-5 mb-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{note.courseName}</h3>
+                    <span className="text-xs font-medium text-slate-400 mt-1">{note.time}</span>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2">
+                        {note.content}
+                      </p>
+                    </div>
+                    {note.image && (
+                      <div className="size-16 shrink-0 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 border border-white/50 dark:border-slate-600/50">
+                        <img 
+                          className="w-full h-full object-cover" 
+                          src={note.image} 
+                          alt={note.courseName}
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {note.tags && note.tags.length > 0 && (
+                    <div className="mt-4 flex items-center gap-2">
+                      {note.tags.map(tag => (
+                        <span 
+                          key={tag}
+                          className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
+                            tag === '重点' 
+                              ? 'bg-primary/10 text-primary' 
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </main>
     </div>
   );

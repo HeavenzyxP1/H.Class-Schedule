@@ -2,7 +2,7 @@ import React from 'react';
 import { ScreenType } from '../App';
 import BottomNav from './BottomNav';
 
-export default function ProfileScreen({ onNavigate }: { onNavigate: (s: ScreenType) => void }) {
+export default function ProfileScreen({ onNavigate }: { onNavigate: (s: ScreenType, id?: string) => void }) {
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto pb-24">
       <div className="flex items-center p-4 justify-between sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-10">

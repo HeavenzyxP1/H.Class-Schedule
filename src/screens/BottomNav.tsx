@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScreenType } from '../App';
 
-export default function BottomNav({ current, onNavigate }: { current: ScreenType, onNavigate: (s: ScreenType) => void }) {
+export default function BottomNav({ current, onNavigate }: { current: ScreenType, onNavigate: (s: ScreenType, id?: string) => void }) {
   return (
     <div className="fixed bottom-8 left-6 right-6 flex items-end justify-between z-40 max-w-md mx-auto">
       <div className="flex items-center gap-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-700/30 px-8 py-3 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50">

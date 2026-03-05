@@ -7,13 +7,15 @@ function CourseBlock({
   className, 
   onNavigate, 
   onActionRequest,
-  courseId
+  course,
+  week
 }: { 
   children: React.ReactNode, 
   className: string, 
-  onNavigate: (s: ScreenType) => void,
+  onNavigate: (s: ScreenType, payload?: any) => void,
   onActionRequest: (id: string) => void,
-  courseId: string
+  course: Course,
+  week: number
 }) {
   const longPressTriggered = React.useRef(false);
   const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
@@ -22,7 +24,7 @@ function CourseBlock({
     longPressTriggered.current = false;
     longPressTimer.current = setTimeout(() => {
       longPressTriggered.current = true;
-      onActionRequest(courseId);
+      onActionRequest(course.id);
     }, 500);
   };
 
@@ -44,7 +46,7 @@ function CourseBlock({
       e.stopPropagation();
       return;
     }
-    onNavigate('add-note');
+    onNavigate('add-note', { course, week });
   };
 
   return (
@@ -77,7 +79,7 @@ export default function ScheduleScreen({
   weekStartDay,
   classTimes
 }: { 
-  onNavigate: (s: ScreenType) => void, 
+  onNavigate: (s: ScreenType, payload?: any) => void, 
   onEditCourse: (course: Course) => void,
   totalWeeks: number, 
   startDate: Date, 
@@ -395,7 +397,8 @@ export default function ScheduleScreen({
                     }}
                   >
                     <CourseBlock 
-                      courseId={course.id} 
+                      course={course} 
+                      week={currentWeek}
                       onNavigate={onNavigate} 
                       onActionRequest={setCourseActionId} 
                       className={`h-full w-full rounded-xl ${colors.bg} border-l-4 ${colors.border} p-2 flex flex-col items-center justify-center backdrop-blur-sm shadow-sm overflow-hidden`}

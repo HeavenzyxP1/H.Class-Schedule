@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScreenType } from '../App';
 
-export default function HelpScreen({ onNavigate }: { onNavigate: (s: ScreenType) => void }) {
+export default function HelpScreen({ onNavigate }: { onNavigate: (s: ScreenType, id?: string) => void }) {
   return (
     <div className="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden pb-10">
       <div className="sticky top-0 z-50 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between">

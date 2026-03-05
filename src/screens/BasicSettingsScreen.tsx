@@ -71,7 +71,7 @@ export default function BasicSettingsScreen({
   weekStartDay,
   setWeekStartDay
 }: { 
-  onNavigate: (s: ScreenType) => void,
+  onNavigate: (s: ScreenType, id?: string) => void,
   totalWeeks: number,
   setTotalWeeks: (w: number) => void,
   startDate: Date,

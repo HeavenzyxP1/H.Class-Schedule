@@ -12,7 +12,7 @@ export default function AddCourseScreen({
   showWeekends,
   editingCourse
 }: { 
-  onNavigate: (s: ScreenType) => void,
+  onNavigate: (s: ScreenType, id?: string) => void,
   courses: Course[],
   setCourses: React.Dispatch<React.SetStateAction<Course[]>>,
   totalWeeks: number,
