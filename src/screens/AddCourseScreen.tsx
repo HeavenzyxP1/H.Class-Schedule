@@ -4,20 +4,51 @@ import { ScreenType, Course } from '../App';
 export default function AddCourseScreen({ 
   onNavigate,
   courses,
-  setCourses
+  setCourses,
+  totalWeeks,
+  morningClasses,
+  afternoonClasses,
+  eveningClasses,
+  showWeekends,
+  editingCourse
 }: { 
   onNavigate: (s: ScreenType) => void,
   courses: Course[],
-  setCourses: React.Dispatch<React.SetStateAction<Course[]>>
+  setCourses: React.Dispatch<React.SetStateAction<Course[]>>,
+  totalWeeks: number,
+  morningClasses: number,
+  afternoonClasses: number,
+  eveningClasses: number,
+  showWeekends: boolean,
+  editingCourse: Course | null
 }) {
-  const [selectedColor, setSelectedColor] = useState('blue');
-  const [courseName, setCourseName] = useState('');
-  const [teacher, setTeacher] = useState('');
-  const [location, setLocation] = useState('');
-  const [dayOfWeek, setDayOfWeek] = useState(1);
-  const [startClass, setStartClass] = useState<number>(1);
-  const [endClass, setEndClass] = useState<number>(2);
-  const [selectedWeeks, setSelectedWeeks] = useState<number[]>(Array.from({length: 18}, (_, i) => i + 1));
+  const [selectedColor, setSelectedColor] = useState(editingCourse?.color || 'blue');
+  const [courseName, setCourseName] = useState(editingCourse?.name || '');
+  const [teacher, setTeacher] = useState(editingCourse?.teacher || '');
+  const [location, setLocation] = useState(editingCourse?.location || '');
+  const [dayOfWeek, setDayOfWeek] = useState(editingCourse?.dayOfWeek || 1);
+  const [startClass, setStartClass] = useState<number>(editingCourse?.startClass || 1);
+  const [endClass, setEndClass] = useState<number>(editingCourse ? editingCourse.startClass + editingCourse.duration - 1 : 2);
+  const [selectedWeeks, setSelectedWeeks] = useState<number[]>(editingCourse?.weeks || Array.from({length: Math.min(18, totalWeeks)}, (_, i) => i + 1));
+
+  const totalClasses = morningClasses + afternoonClasses + eveningClasses;
+
+  const isSlotOccupied = (week: number, day: number, classIdx: number) => {
+    return courses.some(course => 
+      course.id !== editingCourse?.id && 
+      course.weeks.includes(week) && 
+      course.dayOfWeek === day && 
+      classIdx >= course.startClass && 
+      classIdx < course.startClass + course.duration
+    );
+  };
+
+  const isWeekAvailable = (week: number) => {
+    for (let i = startClass; i <= endClass; i++) {
+      if (isSlotOccupied(week, dayOfWeek, i)) return false;
+    }
+    return true;
+  };
 
   const colors = [
     { id: 'blue', bg: 'bg-blue-500', ring: 'ring-blue-500' },
@@ -34,7 +65,7 @@ export default function AddCourseScreen({
         <div onClick={() => onNavigate('schedule')} className="flex size-10 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer">
           <span className="material-symbols-outlined">arrow_back</span>
         </div>
-        <h2 className="text-xl font-bold leading-tight tracking-tight flex-1 text-center">添加课程</h2>
+        <h2 className="text-xl font-bold leading-tight tracking-tight flex-1 text-center">{editingCourse ? '编辑课程' : '添加课程'}</h2>
         <div className="size-10"></div>
       </div>
 
@@ -84,30 +115,42 @@ export default function AddCourseScreen({
         <div className="flex flex-col gap-2">
           <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">上课周数</label>
           <div className="grid grid-cols-6 gap-2">
-            {Array.from({ length: 18 }).map((_, i) => {
+            {Array.from({ length: totalWeeks }).map((_, i) => {
               const week = i + 1;
               const isSelected = selectedWeeks.includes(week);
+              const available = isWeekAvailable(week);
+              
               return (
                 <button
                   key={week}
+                  disabled={!available && !isSelected}
                   onClick={() => {
+                    if (!available && !isSelected) return;
                     setSelectedWeeks(prev => 
                       prev.includes(week) 
                         ? prev.filter(w => w !== week)
                         : [...prev, week].sort((a, b) => a - b)
                     );
                   }}
-                  className={`h-10 rounded-xl font-medium text-sm transition-colors ${
+                  className={`h-10 rounded-xl font-medium text-sm transition-all ${
                     isSelected 
                       ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30' 
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : !available
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {week}
+                  {!available && isSelected && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+                  )}
                 </button>
               );
             })}
           </div>
+          {selectedWeeks.some(w => !isWeekAvailable(w)) && (
+            <p className="text-xs text-red-500 font-medium">部分选中的周次在当前时间段已有课程冲突</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -125,8 +168,12 @@ export default function AddCourseScreen({
                 <option value={3}>星期三</option>
                 <option value={4}>星期四</option>
                 <option value={5}>星期五</option>
-                <option value={6}>星期六</option>
-                <option value={7}>星期日</option>
+                {showWeekends && (
+                  <>
+                    <option value={6}>星期六</option>
+                    <option value={7}>星期日</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -143,7 +190,7 @@ export default function AddCourseScreen({
                 }}
                 className="flex-1 bg-transparent outline-none text-center appearance-none text-slate-900 dark:text-slate-100 font-medium cursor-pointer"
               >
-                {Array.from({length: 15}).map((_, i) => (
+                {Array.from({length: totalClasses}).map((_, i) => (
                   <option key={i+1} value={i+1}>{i+1}</option>
                 ))}
               </select>
@@ -157,7 +204,7 @@ export default function AddCourseScreen({
                 }}
                 className="flex-1 bg-transparent outline-none text-center appearance-none text-slate-900 dark:text-slate-100 font-medium cursor-pointer"
               >
-                {Array.from({length: 15}).map((_, i) => (
+                {Array.from({length: totalClasses}).map((_, i) => (
                   <option key={i+1} value={i+1}>{i+1}</option>
                 ))}
               </select>
@@ -206,18 +253,39 @@ export default function AddCourseScreen({
                 alert('请至少选择一个上课周数');
                 return;
               }
-              const newCourse: Course = {
-                id: Math.random().toString(36).substr(2, 9),
-                name: courseName,
-                teacher: teacher,
-                location: location,
-                dayOfWeek: dayOfWeek,
-                startClass: startClass,
-                duration: endClass - startClass + 1,
-                color: selectedColor,
-                weeks: selectedWeeks
-              };
-              setCourses([...courses, newCourse]);
+              
+              const conflictedWeeks = selectedWeeks.filter(w => !isWeekAvailable(w));
+              if (conflictedWeeks.length > 0) {
+                alert(`第 ${conflictedWeeks.join(', ')} 周在当前时间段已有课程冲突，请调整后再保存`);
+                return;
+              }
+
+              if (editingCourse) {
+                setCourses(prev => prev.map(c => c.id === editingCourse.id ? {
+                  ...c,
+                  name: courseName,
+                  teacher: teacher,
+                  location: location,
+                  dayOfWeek: dayOfWeek,
+                  startClass: startClass,
+                  duration: endClass - startClass + 1,
+                  color: selectedColor,
+                  weeks: selectedWeeks
+                } : c));
+              } else {
+                const newCourse: Course = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  name: courseName,
+                  teacher: teacher,
+                  location: location,
+                  dayOfWeek: dayOfWeek,
+                  startClass: startClass,
+                  duration: endClass - startClass + 1,
+                  color: selectedColor,
+                  weeks: selectedWeeks
+                };
+                setCourses([...courses, newCourse]);
+              }
               onNavigate('schedule');
             }}
             className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"

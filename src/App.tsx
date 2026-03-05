@@ -31,6 +31,11 @@ export interface Course {
   weeks: number[];
 }
 
+export interface ClassTime {
+  start: string;
+  end: string;
+}
+
 const defaultWeeks = Array.from({length: 18}, (_, i) => i + 1);
 
 const initialCourses: Course[] = [
@@ -54,26 +59,57 @@ export default function App() {
   const [morningClasses, setMorningClasses] = useState(4);
   const [afternoonClasses, setAfternoonClasses] = useState(4);
   const [eveningClasses, setEveningClasses] = useState(2);
+  const [weekStartDay, setWeekStartDay] = useState(1); // 1: Mon, 7: Sun, 6: Sat
+  const [classTimes, setClassTimes] = useState<ClassTime[]>(() => {
+    const times: ClassTime[] = [];
+    // Default times for up to 30 classes
+    for (let i = 0; i < 30; i++) {
+      // Generate some reasonable defaults
+      const hour = 8 + Math.floor(i / 2) + (i >= 4 ? 2 : 0) + (i >= 8 ? 2 : 0);
+      const startMin = (i % 2 === 0) ? "00" : "50";
+      const endMin = (i % 2 === 0) ? "45" : "35";
+      const startHour = String(hour).padStart(2, '0');
+      const endHour = (i % 2 === 0) ? startHour : String(hour).padStart(2, '0');
+      
+      // Better defaults for the first 12
+      const defaultStarts = ["08:00", "08:50", "10:00", "10:50", "14:00", "14:50", "16:00", "16:50", "19:00", "19:50", "20:40", "21:30"];
+      const defaultEnds = ["08:45", "09:35", "10:45", "11:35", "14:45", "15:35", "16:45", "17:35", "19:45", "20:35", "21:25", "22:15"];
+      
+      if (i < 12) {
+        times.push({ start: defaultStarts[i], end: defaultEnds[i] });
+      } else {
+        times.push({ start: "00:00", end: "00:00" });
+      }
+    }
+    return times;
+  });
   const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
   const navigate = (screen: ScreenType) => {
+    setEditingCourse(null);
     setCurrentScreen(screen);
+  };
+
+  const handleEditCourse = (course: Course) => {
+    setEditingCourse(course);
+    setCurrentScreen('add-course');
   };
 
   return (
     <div className="w-full min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-sans">
       {currentScreen === 'welcome' && <WelcomeScreen onNavigate={navigate} />}
-      {currentScreen === 'schedule' && <ScheduleScreen onNavigate={navigate} totalWeeks={totalWeeks} startDate={startDate} currentSemester={currentSemester} setCurrentSemester={setCurrentSemester} showWeekends={showWeekends} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} courses={courses} setCourses={setCourses} />}
+      {currentScreen === 'schedule' && <ScheduleScreen onNavigate={navigate} onEditCourse={handleEditCourse} totalWeeks={totalWeeks} startDate={startDate} currentSemester={currentSemester} setCurrentSemester={setCurrentSemester} showWeekends={showWeekends} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} courses={courses} setCourses={setCourses} weekStartDay={weekStartDay} classTimes={classTimes} />}
       {currentScreen === 'profile' && <ProfileScreen onNavigate={navigate} />}
-      {currentScreen === 'add-course' && <AddCourseScreen onNavigate={navigate} courses={courses} setCourses={setCourses} totalWeeks={totalWeeks} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} />}
+      {currentScreen === 'add-course' && <AddCourseScreen onNavigate={navigate} courses={courses} setCourses={setCourses} totalWeeks={totalWeeks} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} showWeekends={showWeekends} editingCourse={editingCourse} />}
       {currentScreen === 'add-note' && <AddNoteScreen onNavigate={navigate} />}
       {currentScreen === 'view-note' && <ViewNoteScreen onNavigate={navigate} />}
       {currentScreen === 'notifications' && <NotificationsScreen onNavigate={navigate} />}
       {currentScreen === 'help' && <HelpScreen onNavigate={navigate} />}
-      {currentScreen === 'settings-basic' && <BasicSettingsScreen onNavigate={navigate} totalWeeks={totalWeeks} setTotalWeeks={setTotalWeeks} startDate={startDate} setStartDate={setStartDate} currentSemester={currentSemester} showWeekends={showWeekends} setShowWeekends={setShowWeekends} morningClasses={morningClasses} setMorningClasses={setMorningClasses} afternoonClasses={afternoonClasses} setAfternoonClasses={setAfternoonClasses} eveningClasses={eveningClasses} setEveningClasses={setEveningClasses} />}
+      {currentScreen === 'settings-basic' && <BasicSettingsScreen onNavigate={navigate} totalWeeks={totalWeeks} setTotalWeeks={setTotalWeeks} startDate={startDate} setStartDate={setStartDate} currentSemester={currentSemester} showWeekends={showWeekends} setShowWeekends={setShowWeekends} morningClasses={morningClasses} setMorningClasses={setMorningClasses} afternoonClasses={afternoonClasses} setAfternoonClasses={setAfternoonClasses} eveningClasses={eveningClasses} setEveningClasses={setEveningClasses} courses={courses} weekStartDay={weekStartDay} setWeekStartDay={setWeekStartDay} />}
       {currentScreen === 'settings-appearance' && <AppearanceSettingsScreen onNavigate={navigate} />}
       {currentScreen === 'settings-notification' && <NotificationSettingsScreen onNavigate={navigate} />}
-      {currentScreen === 'settings-time' && <TimeSettingsScreen onNavigate={navigate} />}
+      {currentScreen === 'settings-time' && <TimeSettingsScreen onNavigate={navigate} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} classTimes={classTimes} setClassTimes={setClassTimes} />}
       {currentScreen === 'settings-account' && <AccountSettingsScreen onNavigate={navigate} />}
     </div>
   );

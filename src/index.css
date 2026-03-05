@@ -40,13 +40,13 @@ body {
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: 1.75rem repeat(5, 1fr);
+  grid-template-columns: 3rem repeat(5, 1fr);
   gap: 1px;
 }
 
 .schedule-grid-7 {
   display: grid;
-  grid-template-columns: 1.75rem repeat(7, 1fr);
+  grid-template-columns: 3rem repeat(7, 1fr);
   gap: 1px;
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ScreenType } from '../App';
+import { ScreenType, Course } from '../App';
 
 function ScrollPicker({ items, value, onChange }: { items: {label: string, value: any}[], value: any, onChange: (val: any) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,10 @@ export default function BasicSettingsScreen({
   afternoonClasses,
   setAfternoonClasses,
   eveningClasses,
-  setEveningClasses
+  setEveningClasses,
+  courses,
+  weekStartDay,
+  setWeekStartDay
 }: { 
   onNavigate: (s: ScreenType) => void,
   totalWeeks: number,
@@ -81,7 +84,10 @@ export default function BasicSettingsScreen({
   afternoonClasses: number,
   setAfternoonClasses: (v: number) => void,
   eveningClasses: number,
-  setEveningClasses: (v: number) => void
+  setEveningClasses: (v: number) => void,
+  courses: Course[],
+  weekStartDay: number,
+  setWeekStartDay: (v: number) => void
 }) {
   const [showStartDayModal, setShowStartDayModal] = useState(false);
   const [showWeeksModal, setShowWeeksModal] = useState(false);
@@ -201,7 +207,24 @@ export default function BasicSettingsScreen({
               <div className="shrink-0">
                 <label className="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
                   <div className="h-full w-[27px] rounded-full bg-white shadow-sm"></div>
-                  <input type="checkbox" className="invisible absolute" checked={showWeekends} onChange={(e) => setShowWeekends(e.target.checked)} />
+                  <input 
+                    type="checkbox" 
+                    className="invisible absolute" 
+                    checked={showWeekends} 
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      if (!newValue) {
+                        const hasWeekendCourses = courses.some(c => c.dayOfWeek === 6 || c.dayOfWeek === 7);
+                        if (hasWeekendCourses) {
+                          alert('当前已有周末课程安排，无法关闭显示周末。');
+                          return;
+                        }
+                        // Reset weekStartDay to Monday if weekends are hidden
+                        setWeekStartDay(1);
+                      }
+                      setShowWeekends(newValue);
+                    }} 
+                  />
                 </label>
               </div>
             </div>
@@ -218,10 +241,21 @@ export default function BasicSettingsScreen({
                 <span className="material-symbols-outlined text-lg">chevron_right</span>
               </div>
             </div>
-            <div onClick={() => setShowStartDayModal(true)} className="flex items-center gap-4 px-4 min-h-[72px] py-2 justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5">
+            <div 
+              onClick={() => {
+                if (!showWeekends) {
+                  alert('关闭显示周末时，每周起始日固定为周一，无法更改。');
+                  return;
+                }
+                setShowStartDayModal(true);
+              }} 
+              className={`flex items-center gap-4 px-4 min-h-[72px] py-2 justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 ${!showWeekends ? 'opacity-50' : ''}`}
+            >
               <div className="flex"><p className="text-lg font-medium leading-normal">每周起始日</p></div>
               <div className="shrink-0 text-primary flex items-center">
-                <span className="text-sm font-medium mr-1">周一</span>
+                <span className="text-sm font-medium mr-1">
+                  {weekStartDay === 1 ? '周一' : weekStartDay === 7 ? '周日' : '周六'}
+                </span>
                 <span className="material-symbols-outlined text-lg">chevron_right</span>
               </div>
             </div>
@@ -272,24 +306,48 @@ export default function BasicSettingsScreen({
               <p className="text-sm text-slate-500 mt-1">选择课程表显示的起始日期</p>
             </div>
             <div className="p-4 space-y-2">
-              <div className="group flex items-center justify-between p-4 rounded-2xl bg-primary/10 border border-primary/20 cursor-pointer">
-                <span className="text-base font-semibold text-primary">周一 (Monday)</span>
-                <div className="size-6 rounded-full bg-primary flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-sm font-bold">check</span>
-                </div>
+              <div 
+                onClick={() => setWeekStartDay(1)}
+                className={`group flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all ${weekStartDay === 1 ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/50'}`}
+              >
+                <span className={`text-base font-semibold ${weekStartDay === 1 ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>周一 (Monday)</span>
+                {weekStartDay === 1 ? (
+                  <div className="size-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-sm font-bold">check</span>
+                  </div>
+                ) : (
+                  <div className="size-6 rounded-full border-2 border-slate-300"></div>
+                )}
               </div>
-              <div className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/50 transition-colors cursor-pointer">
-                <span className="text-base font-medium text-slate-700 dark:text-slate-300">周日 (Sunday)</span>
-                <div className="size-6 rounded-full border-2 border-slate-300"></div>
+              <div 
+                onClick={() => setWeekStartDay(7)}
+                className={`group flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all ${weekStartDay === 7 ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/50'}`}
+              >
+                <span className={`text-base font-semibold ${weekStartDay === 7 ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>周日 (Sunday)</span>
+                {weekStartDay === 7 ? (
+                  <div className="size-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-sm font-bold">check</span>
+                  </div>
+                ) : (
+                  <div className="size-6 rounded-full border-2 border-slate-300"></div>
+                )}
               </div>
-              <div className="group flex items-center justify-between p-4 rounded-2xl hover:bg-white/50 transition-colors cursor-pointer">
-                <span className="text-base font-medium text-slate-700 dark:text-slate-300">周六 (Saturday)</span>
-                <div className="size-6 rounded-full border-2 border-slate-300"></div>
+              <div 
+                onClick={() => setWeekStartDay(6)}
+                className={`group flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all ${weekStartDay === 6 ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/50'}`}
+              >
+                <span className={`text-base font-semibold ${weekStartDay === 6 ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>周六 (Saturday)</span>
+                {weekStartDay === 6 ? (
+                  <div className="size-6 rounded-full bg-primary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-sm font-bold">check</span>
+                  </div>
+                ) : (
+                  <div className="size-6 rounded-full border-2 border-slate-300"></div>
+                )}
               </div>
             </div>
             <div className="p-6 pt-2 flex gap-3">
-              <button onClick={() => setShowStartDayModal(false)} className="flex-1 py-3 px-4 rounded-xl font-semibold text-slate-600 bg-slate-200/50 hover:bg-slate-200 transition-colors">取消</button>
-              <button onClick={() => setShowStartDayModal(false)} className="flex-1 py-3 px-4 rounded-xl font-semibold text-white bg-primary shadow-lg shadow-primary/30 hover:brightness-110 transition-all">确认</button>
+              <button onClick={() => setShowStartDayModal(false)} className="w-full py-3 px-4 rounded-xl font-semibold text-white bg-primary shadow-lg shadow-primary/30 hover:brightness-110 transition-all">确认</button>
             </div>
           </div>
         </div>
