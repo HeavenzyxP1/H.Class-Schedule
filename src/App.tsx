@@ -28,18 +28,21 @@ export interface Course {
   startClass: number;
   duration: number;
   color: string;
+  weeks: number[];
 }
 
+const defaultWeeks = Array.from({length: 18}, (_, i) => i + 1);
+
 const initialCourses: Course[] = [
-  { id: '1', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 1, startClass: 1, duration: 2, color: 'primary' },
-  { id: '2', name: '体育', location: '操场', teacher: '李老师', dayOfWeek: 1, startClass: 4, duration: 1, color: 'orange' },
-  { id: '3', name: '大学英语', location: '外语楼 4A', teacher: 'Smith', dayOfWeek: 2, startClass: 2, duration: 2, color: 'emerald' },
-  { id: '4', name: '近代史', location: '综B 102', teacher: '赵老师', dayOfWeek: 2, startClass: 4, duration: 1, color: 'purple' },
-  { id: '5', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 3, startClass: 1, duration: 2, color: 'primary' },
-  { id: '6', name: '设计导论', location: '艺楼 305', teacher: '陈老师', dayOfWeek: 3, startClass: 3, duration: 2, color: 'pink' },
-  { id: '7', name: '计算机基础', location: '机房 102', teacher: '刘老师', dayOfWeek: 4, startClass: 2, duration: 2, color: 'blue' },
-  { id: '8', name: '实验课', location: '实验中心', teacher: '黄老师', dayOfWeek: 5, startClass: 1, duration: 1, color: 'amber' },
-  { id: '9', name: '英语视听', location: '语音室', teacher: '周老师', dayOfWeek: 5, startClass: 3, duration: 1, color: 'emerald' },
+  { id: '1', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 1, startClass: 1, duration: 2, color: 'primary', weeks: defaultWeeks },
+  { id: '2', name: '体育', location: '操场', teacher: '李老师', dayOfWeek: 1, startClass: 4, duration: 1, color: 'orange', weeks: defaultWeeks },
+  { id: '3', name: '大学英语', location: '外语楼 4A', teacher: 'Smith', dayOfWeek: 2, startClass: 2, duration: 2, color: 'emerald', weeks: defaultWeeks },
+  { id: '4', name: '近代史', location: '综B 102', teacher: '赵老师', dayOfWeek: 2, startClass: 4, duration: 1, color: 'purple', weeks: defaultWeeks },
+  { id: '5', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 3, startClass: 1, duration: 2, color: 'primary', weeks: defaultWeeks },
+  { id: '6', name: '设计导论', location: '艺楼 305', teacher: '陈老师', dayOfWeek: 3, startClass: 3, duration: 2, color: 'pink', weeks: defaultWeeks },
+  { id: '7', name: '计算机基础', location: '机房 102', teacher: '刘老师', dayOfWeek: 4, startClass: 2, duration: 2, color: 'blue', weeks: defaultWeeks },
+  { id: '8', name: '实验课', location: '实验中心', teacher: '黄老师', dayOfWeek: 5, startClass: 1, duration: 1, color: 'amber', weeks: defaultWeeks },
+  { id: '9', name: '英语视听', location: '语音室', teacher: '周老师', dayOfWeek: 5, startClass: 3, duration: 1, color: 'emerald', weeks: defaultWeeks },
 ];
 
 export default function App() {
@@ -62,7 +65,7 @@ export default function App() {
       {currentScreen === 'welcome' && <WelcomeScreen onNavigate={navigate} />}
       {currentScreen === 'schedule' && <ScheduleScreen onNavigate={navigate} totalWeeks={totalWeeks} startDate={startDate} currentSemester={currentSemester} setCurrentSemester={setCurrentSemester} showWeekends={showWeekends} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} courses={courses} setCourses={setCourses} />}
       {currentScreen === 'profile' && <ProfileScreen onNavigate={navigate} />}
-      {currentScreen === 'add-course' && <AddCourseScreen onNavigate={navigate} courses={courses} setCourses={setCourses} />}
+      {currentScreen === 'add-course' && <AddCourseScreen onNavigate={navigate} courses={courses} setCourses={setCourses} totalWeeks={totalWeeks} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} />}
       {currentScreen === 'add-note' && <AddNoteScreen onNavigate={navigate} />}
       {currentScreen === 'view-note' && <ViewNoteScreen onNavigate={navigate} />}
       {currentScreen === 'notifications' && <NotificationsScreen onNavigate={navigate} />}

@@ -15,8 +15,9 @@ export default function AddCourseScreen({
   const [teacher, setTeacher] = useState('');
   const [location, setLocation] = useState('');
   const [dayOfWeek, setDayOfWeek] = useState(1);
-  const [startClass, setStartClass] = useState('');
-  const [duration, setDuration] = useState('');
+  const [startClass, setStartClass] = useState<number>(1);
+  const [endClass, setEndClass] = useState<number>(2);
+  const [selectedWeeks, setSelectedWeeks] = useState<number[]>(Array.from({length: 18}, (_, i) => i + 1));
 
   const colors = [
     { id: 'blue', bg: 'bg-blue-500', ring: 'ring-blue-500' },
@@ -81,10 +82,31 @@ export default function AddCourseScreen({
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">上课周次</label>
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">calendar_view_week</span>
-            <input className="flex w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 h-14 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="例如：1-16周" type="text"/>
+          <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">上课周数</label>
+          <div className="grid grid-cols-6 gap-2">
+            {Array.from({ length: 18 }).map((_, i) => {
+              const week = i + 1;
+              const isSelected = selectedWeeks.includes(week);
+              return (
+                <button
+                  key={week}
+                  onClick={() => {
+                    setSelectedWeeks(prev => 
+                      prev.includes(week) 
+                        ? prev.filter(w => w !== week)
+                        : [...prev, week].sort((a, b) => a - b)
+                    );
+                  }}
+                  className={`h-10 rounded-xl font-medium text-sm transition-colors ${
+                    isSelected 
+                      ? 'bg-blue-500 text-white shadow-sm shadow-blue-500/30' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {week}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -109,34 +131,37 @@ export default function AddCourseScreen({
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">开始节次</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">format_list_numbered</span>
-              <input 
+            <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">上课时间</label>
+            <div className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 h-14 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+              <span className="text-slate-500 text-sm">第</span>
+              <select 
                 value={startClass}
-                onChange={(e) => setStartClass(e.target.value)}
-                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 h-14 focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                placeholder="例如：1" 
-                type="number"
-                min="1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">连上节数</label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">timer</span>
-              <input 
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="flex w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 pl-10 h-14 focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                placeholder="例如：2" 
-                type="number"
-                min="1"
-              />
+                onChange={(e) => {
+                  const newStart = parseInt(e.target.value);
+                  setStartClass(newStart);
+                  if (newStart > endClass) setEndClass(newStart);
+                }}
+                className="flex-1 bg-transparent outline-none text-center appearance-none text-slate-900 dark:text-slate-100 font-medium cursor-pointer"
+              >
+                {Array.from({length: 15}).map((_, i) => (
+                  <option key={i+1} value={i+1}>{i+1}</option>
+                ))}
+              </select>
+              <span className="text-slate-500 text-sm">-</span>
+              <select 
+                value={endClass}
+                onChange={(e) => {
+                  const newEnd = parseInt(e.target.value);
+                  setEndClass(newEnd);
+                  if (newEnd < startClass) setStartClass(newEnd);
+                }}
+                className="flex-1 bg-transparent outline-none text-center appearance-none text-slate-900 dark:text-slate-100 font-medium cursor-pointer"
+              >
+                {Array.from({length: 15}).map((_, i) => (
+                  <option key={i+1} value={i+1}>{i+1}</option>
+                ))}
+              </select>
+              <span className="text-slate-500 text-sm">节</span>
             </div>
           </div>
         </div>
@@ -173,8 +198,12 @@ export default function AddCourseScreen({
           </div>
           <button 
             onClick={() => {
-              if (!courseName || !startClass || !duration) {
-                alert('请填写课程名称、开始节次和连上节数');
+              if (!courseName) {
+                alert('请填写课程名称');
+                return;
+              }
+              if (selectedWeeks.length === 0) {
+                alert('请至少选择一个上课周数');
                 return;
               }
               const newCourse: Course = {
@@ -183,9 +212,10 @@ export default function AddCourseScreen({
                 teacher: teacher,
                 location: location,
                 dayOfWeek: dayOfWeek,
-                startClass: parseInt(startClass),
-                duration: parseInt(duration),
-                color: selectedColor
+                startClass: startClass,
+                duration: endClass - startClass + 1,
+                color: selectedColor,
+                weeks: selectedWeeks
               };
               setCourses([...courses, newCourse]);
               onNavigate('schedule');
