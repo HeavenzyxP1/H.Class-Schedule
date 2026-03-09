@@ -48,60 +48,15 @@ export interface Note {
   image?: string;
   tags?: string[];
   timestamp: number;
+  hasReminder?: boolean;
+  reminderTime?: number;
 }
 
 const defaultWeeks = Array.from({length: 18}, (_, i) => i + 1);
 
-const initialNotes: Note[] = [
-  {
-    id: '1',
-    courseId: '1',
-    week: 1,
-    courseName: '高等数学',
-    time: '14:20',
-    date: '3月12日',
-    dayOfWeek: '周一',
-    content: '关于微积分基本定理的推导过程，注意牛顿-莱布尼茨公式的应用条件。今天重点讲了变限积分的求导...',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBYGxbaCXgfE6R2whx1UQcb95xYXoVLLEFMXn0tBsxjBOlJhriPGCXA-TnVtP53DAw2Qc4qz1nhobJToJ-o3TrqkzrgiHk3Y3J4_gGtwSfvoqzly4nO2vTc_y3MbRR8VRORG3UHX2Zw0f7M8-4DIRj979xhd6gz4LbeJzozcHZ2Jfv7ACi7QD8zAwzsfUMaQhmMb-Lc_c6MNdZB0V-7KhkikXwZ8_CIL_2dMaJF89WAdXDgo3yADKmZjt9VpfW58bc2-Nytf_j7wYQ0',
-    tags: ['重点', '有附件'],
-    timestamp: new Date('2026-03-12T14:20:00').getTime()
-  },
-  {
-    id: '2',
-    courseId: '99',
-    week: 1,
-    courseName: '大学物理',
-    time: '10:15',
-    date: '3月12日',
-    dayOfWeek: '周一',
-    content: '简谐振动的能量守恒。动能与势能的相互转化，注意相位差的概念...',
-    timestamp: new Date('2026-03-12T10:15:00').getTime()
-  },
-  {
-    id: '3',
-    courseId: '98',
-    week: 1,
-    courseName: '线性代数',
-    time: '15:45',
-    date: '3月11日',
-    dayOfWeek: '周日',
-    content: '矩阵的特征值与特征向量的性质总结，重点看齐次线性方程组的解。克拉默法则的适用范围。',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA1yynWtn9UI2t-ntivIHoTQ6bGqf2D3ZAdGe6mUhfuCp2hc69NxN_mSDg0U6Xy-mVK75hJiZZm-s1JcjYJq_SaKlIIWKGIfVKszT-okBhY-lbftSlxTJHaVqjlu4ObgqRufbWyLwAR_J30jOCJOLDlxfz8imQ-347Wp7wbZWPmBFxsWR1QZ4N4XqmDy-WqzuFThNZd6NkYXHO2ATpj9Lb4A3y3N2Cf_uEtV91AI3ynhJuT_2jHeWpQ5V2faH1CMs54ObZwfVXwjFK5',
-    timestamp: new Date('2026-03-11T15:45:00').getTime()
-  }
-];
+const initialNotes: Note[] = [];
 
-const initialCourses: Course[] = [
-  { id: '1', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 1, startClass: 1, duration: 2, color: 'primary', weeks: defaultWeeks },
-  { id: '2', name: '体育', location: '操场', teacher: '李老师', dayOfWeek: 1, startClass: 4, duration: 1, color: 'orange', weeks: defaultWeeks },
-  { id: '3', name: '大学英语', location: '外语楼 4A', teacher: 'Smith', dayOfWeek: 2, startClass: 2, duration: 2, color: 'emerald', weeks: defaultWeeks },
-  { id: '4', name: '近代史', location: '综B 102', teacher: '赵老师', dayOfWeek: 2, startClass: 4, duration: 1, color: 'purple', weeks: defaultWeeks },
-  { id: '5', name: '高等数学', location: '教三 201', teacher: '王老师', dayOfWeek: 3, startClass: 1, duration: 2, color: 'primary', weeks: defaultWeeks },
-  { id: '6', name: '设计导论', location: '艺楼 305', teacher: '陈老师', dayOfWeek: 3, startClass: 3, duration: 2, color: 'pink', weeks: defaultWeeks },
-  { id: '7', name: '计算机基础', location: '机房 102', teacher: '刘老师', dayOfWeek: 4, startClass: 2, duration: 2, color: 'blue', weeks: defaultWeeks },
-  { id: '8', name: '实验课', location: '实验中心', teacher: '黄老师', dayOfWeek: 5, startClass: 1, duration: 1, color: 'amber', weeks: defaultWeeks },
-  { id: '9', name: '英语视听', location: '语音室', teacher: '周老师', dayOfWeek: 5, startClass: 3, duration: 1, color: 'emerald', weeks: defaultWeeks },
-];
+const initialCourses: Course[] = [];
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('welcome');
@@ -144,24 +99,54 @@ export default function App() {
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [noteSource, setNoteSource] = useState<ScreenType>('schedule');
 
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('isDarkMode');
+    if (saved !== null) return JSON.parse(saved);
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+  const [themeColor, setThemeColor] = useState(() => {
+    return localStorage.getItem('themeColor') || '#4c7fe6';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('isDarkMode', JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  React.useEffect(() => {
+    localStorage.setItem('themeColor', themeColor);
+    document.documentElement.style.setProperty('--color-primary', themeColor);
+  }, [themeColor]);
+
   const navigate = (screen: ScreenType, payload?: any) => {
     if (screen === 'add-note') {
-      const { course, week } = payload as { course: Course, week: number };
-      if (course) {
+      const { course, week, note } = (payload || {}) as { course?: Course, week?: number, note?: Note };
+      if (course && week !== undefined) {
         setSelectedCourse(course);
         setSelectedWeek(week);
-        // Check if note exists for this course and week
-        const existingNote = notes.find(n => n.courseId === course.id && n.week === week);
-        if (existingNote) {
-          setSelectedNoteId(existingNote.id);
-          setCurrentScreen('view-note');
-          return;
+        if (note) {
+          setEditingNote(note);
+        } else {
+          setEditingNote(null);
+          // Check if note exists for this course and week
+          const existingNote = notes.find(n => n.courseId === course.id && n.week === week);
+          if (existingNote) {
+            setSelectedNoteId(existingNote.id);
+            setCurrentScreen('view-note');
+            return;
+          }
         }
       }
     }
     
     if (screen === 'view-note') {
-      if (currentScreen !== 'view-note') {
+      if (currentScreen !== 'view-note' && currentScreen !== 'add-note') {
         setNoteSource(currentScreen);
       }
       if (typeof payload === 'string') {
@@ -177,18 +162,30 @@ export default function App() {
     setCurrentScreen('add-course');
   };
 
+  const handleDeleteNote = (id: string) => {
+    setNotes(prev => prev.filter(n => n.id !== id));
+    navigate(noteSource);
+  };
+
+  const handleEditNote = (note: Note) => {
+    const course = courses.find(c => c.id === note.courseId);
+    if (course) {
+      navigate('add-note', { course, week: note.week, note });
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-sans">
       {currentScreen === 'welcome' && <WelcomeScreen onNavigate={navigate} />}
       {currentScreen === 'schedule' && <ScheduleScreen onNavigate={navigate} onEditCourse={handleEditCourse} totalWeeks={totalWeeks} startDate={startDate} currentSemester={currentSemester} setCurrentSemester={setCurrentSemester} showWeekends={showWeekends} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} courses={courses} setCourses={setCourses} weekStartDay={weekStartDay} classTimes={classTimes} />}
       {currentScreen === 'profile' && <ProfileScreen onNavigate={navigate} />}
       {currentScreen === 'add-course' && <AddCourseScreen onNavigate={navigate} courses={courses} setCourses={setCourses} totalWeeks={totalWeeks} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} showWeekends={showWeekends} editingCourse={editingCourse} />}
-      {currentScreen === 'add-note' && <AddNoteScreen onNavigate={navigate} notes={notes} setNotes={setNotes} course={selectedCourse} week={selectedWeek} />}
-      {currentScreen === 'view-note' && <ViewNoteScreen onNavigate={navigate} from={noteSource} note={notes.find(n => n.id === selectedNoteId) || notes[0]} />}
+      {currentScreen === 'add-note' && <AddNoteScreen onNavigate={navigate} notes={notes} setNotes={setNotes} course={selectedCourse} week={selectedWeek} editingNote={editingNote} />}
+      {currentScreen === 'view-note' && <ViewNoteScreen onNavigate={navigate} from={noteSource} note={notes.find(n => n.id === selectedNoteId) || notes[0]} onDelete={handleDeleteNote} onEdit={handleEditNote} setNotes={setNotes} />}
       {currentScreen === 'notifications' && <NotificationsScreen onNavigate={navigate} notes={notes} />}
       {currentScreen === 'help' && <HelpScreen onNavigate={navigate} />}
       {currentScreen === 'settings-basic' && <BasicSettingsScreen onNavigate={navigate} totalWeeks={totalWeeks} setTotalWeeks={setTotalWeeks} startDate={startDate} setStartDate={setStartDate} currentSemester={currentSemester} showWeekends={showWeekends} setShowWeekends={setShowWeekends} morningClasses={morningClasses} setMorningClasses={setMorningClasses} afternoonClasses={afternoonClasses} setAfternoonClasses={setAfternoonClasses} eveningClasses={eveningClasses} setEveningClasses={setEveningClasses} courses={courses} weekStartDay={weekStartDay} setWeekStartDay={setWeekStartDay} />}
-      {currentScreen === 'settings-appearance' && <AppearanceSettingsScreen onNavigate={navigate} />}
+      {currentScreen === 'settings-appearance' && <AppearanceSettingsScreen onNavigate={navigate} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} themeColor={themeColor} setThemeColor={setThemeColor} />}
       {currentScreen === 'settings-notification' && <NotificationSettingsScreen onNavigate={navigate} />}
       {currentScreen === 'settings-time' && <TimeSettingsScreen onNavigate={navigate} morningClasses={morningClasses} afternoonClasses={afternoonClasses} eveningClasses={eveningClasses} classTimes={classTimes} setClassTimes={setClassTimes} />}
       {currentScreen === 'settings-account' && <AccountSettingsScreen onNavigate={navigate} />}

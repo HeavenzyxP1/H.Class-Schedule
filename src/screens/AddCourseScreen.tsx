@@ -59,6 +59,48 @@ export default function AddCourseScreen({
     { id: 'amber', bg: 'bg-amber-500', ring: 'ring-amber-500' },
   ];
 
+  const [isCopied, setIsCopied] = useState(false);
+  const [isPasted, setIsPasted] = useState(false);
+
+  const handleCopyCourse = () => {
+    const copiedCourse = {
+      name: courseName,
+      teacher,
+      location,
+      dayOfWeek,
+      startClass,
+      endClass,
+      weeks: selectedWeeks,
+      color: selectedColor
+    };
+    localStorage.setItem('copiedCourse', JSON.stringify(copiedCourse));
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handlePasteCourse = () => {
+    const copiedCourseStr = localStorage.getItem('copiedCourse');
+    if (copiedCourseStr) {
+      try {
+        const copiedCourse = JSON.parse(copiedCourseStr);
+        setCourseName(copiedCourse.name || '');
+        setTeacher(copiedCourse.teacher || '');
+        setLocation(copiedCourse.location || '');
+        setDayOfWeek(copiedCourse.dayOfWeek || 1);
+        setStartClass(copiedCourse.startClass || 1);
+        setEndClass(copiedCourse.endClass || 2);
+        setSelectedWeeks(copiedCourse.weeks || []);
+        setSelectedColor(copiedCourse.color || 'blue');
+        setIsPasted(true);
+        setTimeout(() => setIsPasted(false), 2000);
+      } catch (e) {
+        alert('粘贴失败，剪贴板数据无效');
+      }
+    } else {
+      alert('没有可粘贴的课程');
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark">
       <div className="flex items-center px-4 py-6 justify-between sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark">
@@ -229,18 +271,47 @@ export default function AddCourseScreen({
                 <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
               </label>
             ))}
+            <label className="relative flex items-center justify-center cursor-pointer">
+              <input 
+                type="color" 
+                className="sr-only peer" 
+                value={selectedColor.startsWith('#') ? selectedColor : '#3b82f6'}
+                onChange={(e) => setSelectedColor(e.target.value)}
+              />
+              <div 
+                className={`w-10 h-10 rounded-full ring-offset-2 dark:ring-offset-slate-900 transition-all flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-600 ${selectedColor.startsWith('#') ? 'ring-2 ring-primary border-transparent' : ''}`}
+                style={selectedColor.startsWith('#') ? { backgroundColor: selectedColor, borderColor: selectedColor } : {}}
+              >
+                {!selectedColor.startsWith('#') && <span className="material-symbols-outlined text-slate-400">add</span>}
+              </div>
+              {selectedColor.startsWith('#') && <span className="material-symbols-outlined absolute text-white scale-100 transition-transform text-sm drop-shadow-md">check</span>}
+            </label>
           </div>
         </div>
 
         <div className="pt-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-              <span className="material-symbols-outlined text-xl">content_copy</span>
-              <span className="text-sm">复制课程</span>
+            <button 
+              onClick={handleCopyCourse} 
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border backdrop-blur-sm font-medium transition-all active:scale-95 ${
+                isCopied 
+                  ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/20' 
+                  : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white hover:border-primary hover:shadow-lg hover:shadow-primary/20 dark:hover:bg-primary dark:hover:text-white dark:hover:border-primary'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">{isCopied ? 'check' : 'content_copy'}</span>
+              <span className="text-sm">{isCopied ? '已复制' : '复制课程'}</span>
             </button>
-            <button className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-              <span className="material-symbols-outlined text-xl">content_paste</span>
-              <span className="text-sm">粘贴课程</span>
+            <button 
+              onClick={handlePasteCourse} 
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border backdrop-blur-sm font-medium transition-all active:scale-95 ${
+                isPasted 
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-lg shadow-blue-500/20' 
+                  : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white hover:border-primary hover:shadow-lg hover:shadow-primary/20 dark:hover:bg-primary dark:hover:text-white dark:hover:border-primary'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">{isPasted ? 'check' : 'content_paste'}</span>
+              <span className="text-sm">{isPasted ? '已粘贴' : '粘贴课程'}</span>
             </button>
           </div>
           <button 

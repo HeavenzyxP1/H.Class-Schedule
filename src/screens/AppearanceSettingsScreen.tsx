@@ -1,7 +1,27 @@
 import React from 'react';
 import { ScreenType } from '../App';
 
-export default function AppearanceSettingsScreen({ onNavigate }: { onNavigate: (s: ScreenType, id?: string) => void }) {
+export default function AppearanceSettingsScreen({ 
+  onNavigate,
+  isDarkMode,
+  setIsDarkMode,
+  themeColor,
+  setThemeColor
+}: { 
+  onNavigate: (s: ScreenType, id?: string) => void,
+  isDarkMode: boolean,
+  setIsDarkMode: (v: boolean) => void,
+  themeColor: string,
+  setThemeColor: (v: string) => void
+}) {
+  const themeColors = [
+    { id: 'blue', color: '#4c7fe6' },
+    { id: 'pink', color: '#ff2d55' },
+    { id: 'purple', color: '#5856d6' },
+    { id: 'orange', color: '#ff9500' },
+    { id: 'green', color: '#4cd964' }
+  ];
+
   return (
     <div className="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col overflow-x-hidden pb-10">
       <header className="sticky top-0 z-50 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 pb-2 justify-between">
@@ -20,7 +40,12 @@ export default function AppearanceSettingsScreen({ onNavigate }: { onNavigate: (
               <div className="shrink-0">
                 <label className="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-700 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary">
                   <div className="h-full w-[27px] rounded-full bg-white shadow-sm"></div>
-                  <input type="checkbox" className="invisible absolute" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    className="invisible absolute" 
+                    checked={isDarkMode}
+                    onChange={(e) => setIsDarkMode(e.target.checked)}
+                  />
                 </label>
               </div>
             </div>
@@ -30,31 +55,19 @@ export default function AppearanceSettingsScreen({ onNavigate }: { onNavigate: (
                 <p className="text-lg font-medium leading-normal">主题颜色</p>
               </div>
               <div className="flex justify-between items-center">
-                <label className="relative flex items-center justify-center cursor-pointer">
-                  <input type="radio" name="theme-color" className="sr-only peer" defaultChecked />
-                  <div className="w-10 h-10 rounded-full bg-[#4c7fe6] ring-offset-2 ring-primary transition-all peer-checked:ring-2"></div>
-                  <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
-                </label>
-                <label className="relative flex items-center justify-center cursor-pointer">
-                  <input type="radio" name="theme-color" className="sr-only peer" />
-                  <div className="w-10 h-10 rounded-full bg-[#ff2d55] ring-offset-2 ring-[#ff2d55] transition-all peer-checked:ring-2"></div>
-                  <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
-                </label>
-                <label className="relative flex items-center justify-center cursor-pointer">
-                  <input type="radio" name="theme-color" className="sr-only peer" />
-                  <div className="w-10 h-10 rounded-full bg-[#5856d6] ring-offset-2 ring-[#5856d6] transition-all peer-checked:ring-2"></div>
-                  <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
-                </label>
-                <label className="relative flex items-center justify-center cursor-pointer">
-                  <input type="radio" name="theme-color" className="sr-only peer" />
-                  <div className="w-10 h-10 rounded-full bg-[#ff9500] ring-offset-2 ring-[#ff9500] transition-all peer-checked:ring-2"></div>
-                  <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
-                </label>
-                <label className="relative flex items-center justify-center cursor-pointer">
-                  <input type="radio" name="theme-color" className="sr-only peer" />
-                  <div className="w-10 h-10 rounded-full bg-[#4cd964] ring-offset-2 ring-[#4cd964] transition-all peer-checked:ring-2"></div>
-                  <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
-                </label>
+                {themeColors.map(t => (
+                  <label key={t.id} className="relative flex items-center justify-center cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="theme-color" 
+                      className="sr-only peer" 
+                      checked={themeColor === t.color}
+                      onChange={() => setThemeColor(t.color)}
+                    />
+                    <div className="w-10 h-10 rounded-full ring-offset-2 transition-all peer-checked:ring-2" style={{ backgroundColor: t.color, '--tw-ring-color': t.color } as React.CSSProperties}></div>
+                    <span className="material-symbols-outlined absolute text-white scale-0 peer-checked:scale-100 transition-transform text-sm">check</span>
+                  </label>
+                ))}
               </div>
             </div>
           </div>

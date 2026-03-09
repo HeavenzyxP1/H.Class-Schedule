@@ -1,37 +1,68 @@
 import React, { useState } from 'react';
 import { ScreenType, Note, Course } from '../App';
 
-export default function AddNoteScreen({ onNavigate, notes, setNotes, course, week }: { 
+export default function AddNoteScreen({ onNavigate, notes, setNotes, course, week, editingNote }: { 
   onNavigate: (s: ScreenType, id?: string) => void, 
   notes: Note[], 
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>,
   course: Course | null,
-  week: number
+  week: number,
+  editingNote?: Note | null
 }) {
-  const [content, setContent] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [content, setContent] = useState(editingNote?.content || '');
+  const [images, setImages] = useState<string[]>(editingNote?.image ? [editingNote.image] : []);
+
+  const formatDateTimeLocal = (timestamp: number) => {
+    const d = new Date(timestamp);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const [hasReminder, setHasReminder] = useState(editingNote?.hasReminder || false);
+  const [reminderTimeStr, setReminderTimeStr] = useState(
+    editingNote?.reminderTime 
+      ? formatDateTimeLocal(editingNote.reminderTime) 
+      : formatDateTimeLocal(Date.now() + 86400000)
+  );
 
   const handleSave = () => {
     if (!content.trim() || !course) return;
 
-    const now = new Date();
-    
-    const newNote: Note = {
-      id: Date.now().toString(),
-      courseId: course.id,
-      week: week,
-      courseName: course.name,
-      content: content,
-      time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
-      date: `${now.getMonth() + 1}月${now.getDate()}日`,
-      dayOfWeek: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()],
-      image: images[0], // For simplicity, just use the first image as the cover in the list
-      timestamp: now.getTime(),
-      tags: images.length > 0 ? ['有附件'] : []
-    };
+    const reminderTime = new Date(reminderTimeStr).getTime();
 
-    setNotes(prev => [newNote, ...prev]);
-    onNavigate('notifications');
+    if (editingNote) {
+      const updatedNote: Note = {
+        ...editingNote,
+        content: content,
+        image: images[0],
+        tags: images.length > 0 ? ['有附件'] : [],
+        hasReminder,
+        reminderTime
+      };
+      setNotes(prev => prev.map(n => n.id === editingNote.id ? updatedNote : n));
+      onNavigate('view-note', editingNote.id);
+    } else {
+      const now = new Date();
+      
+      const newNote: Note = {
+        id: Date.now().toString(),
+        courseId: course.id,
+        week: week,
+        courseName: course.name,
+        content: content,
+        time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+        date: `${now.getMonth() + 1}月${now.getDate()}日`,
+        dayOfWeek: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()],
+        image: images[0], // For simplicity, just use the first image as the cover in the list
+        timestamp: now.getTime(),
+        tags: images.length > 0 ? ['有附件'] : [],
+        hasReminder,
+        reminderTime
+      };
+
+      setNotes(prev => [newNote, ...prev]);
+      onNavigate('notifications');
+    }
   };
 
   const handleAddImage = () => {
@@ -44,10 +75,16 @@ export default function AddNoteScreen({ onNavigate, notes, setNotes, course, wee
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark pb-10">
       <header className="flex items-center justify-between p-4 sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
-        <button onClick={() => onNavigate('schedule')} className="flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+        <button onClick={() => {
+          if (editingNote) {
+            onNavigate('view-note', editingNote.id);
+          } else {
+            onNavigate('schedule');
+          }
+        }} className="flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
           <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">close</span>
         </button>
-        <h1 className="text-lg font-bold leading-tight tracking-tight">随记</h1>
+        <h1 className="text-lg font-bold leading-tight tracking-tight">{editingNote ? '编辑随记' : '随记'}</h1>
         <button 
           onClick={handleSave} 
           disabled={!content.trim()}
@@ -119,34 +156,48 @@ export default function AddNoteScreen({ onNavigate, notes, setNotes, course, wee
           </div>
         </section>
 
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 px-1">
-            <span className="material-symbols-outlined text-primary text-xl">notifications</span>
-            <h2 className="text-base font-bold">提醒</h2>
-          </div>
-          <div className="liquid-glass rounded-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-700/30">
-              <div className="flex flex-col">
-                <span className="font-medium">提醒我</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">开启后将通过系统推送提醒</span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-              </label>
+        {!editingNote && (
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 px-1">
+              <span className="material-symbols-outlined text-primary text-xl">notifications</span>
+              <h2 className="text-base font-bold">提醒</h2>
             </div>
-            <div className="flex items-center justify-between p-4 hover:bg-slate-500/5 transition-colors cursor-pointer">
-              <div className="flex flex-col">
-                <span className="font-medium">提醒时间</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">ddl来的</span>
+            <div className="liquid-glass rounded-2xl overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-700/30">
+                <div className="flex flex-col">
+                  <span className="font-medium">提醒我</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">开启后将通过系统推送提醒</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={hasReminder}
+                    onChange={e => setHasReminder(e.target.checked)}
+                  />
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
               </div>
-              <div className="flex items-center gap-2 text-primary font-medium">
-                <span>明天 09:00</span>
-                <span className="material-symbols-outlined text-slate-400">chevron_right</span>
-              </div>
+              {hasReminder && (
+                <div className="flex items-center justify-between p-4 hover:bg-slate-500/5 transition-colors cursor-pointer relative">
+                  <div className="flex flex-col">
+                    <span className="font-medium">提醒时间</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">设置具体时间</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-primary font-medium">
+                    <input 
+                      type="datetime-local" 
+                      value={reminderTimeStr}
+                      onChange={e => setReminderTimeStr(e.target.value)}
+                      className="bg-transparent border-none outline-none text-right text-primary cursor-pointer"
+                    />
+                    <span className="material-symbols-outlined text-slate-400">chevron_right</span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
     </div>
   );

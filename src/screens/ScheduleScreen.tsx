@@ -5,6 +5,7 @@ import BottomNav from './BottomNav';
 function CourseBlock({ 
   children, 
   className, 
+  style,
   onNavigate, 
   onActionRequest,
   course,
@@ -12,6 +13,7 @@ function CourseBlock({
 }: { 
   children: React.ReactNode, 
   className: string, 
+  style?: React.CSSProperties,
   onNavigate: (s: ScreenType, payload?: any) => void,
   onActionRequest: (id: string) => void,
   course: Course,
@@ -57,6 +59,7 @@ function CourseBlock({
       onPointerCancel={handlePointerLeave}
       onClick={handleClick}
       className={`${className} cursor-pointer select-none`}
+      style={style}
     >
       {children}
     </div>
@@ -188,6 +191,31 @@ export default function ScheduleScreen({
     return rows;
   }, [morningClasses, afternoonClasses, eveningClasses]);
 
+  const rowHeights = useMemo(() => {
+    let maxClassHeight = 150; // Default base height
+    
+    const visibleCourses = courses.filter(c => c.weeks.includes(currentWeek));
+    
+    visibleCourses.forEach(course => {
+      const nameLineHeight = showWeekends ? 16 : 20;
+      const secondaryCharHeight = 12;
+      const nameLines = Math.ceil(course.name.length / 2);
+      const nameHeight = nameLines * nameLineHeight;
+      const locationHeight = (course.location?.length || 0) * secondaryCharHeight;
+      const teacherHeight = (course.teacher?.length || 0) * secondaryCharHeight;
+      const extraSpace = showWeekends ? 24 : 32;
+      
+      const requiredHeight = nameHeight + locationHeight + teacherHeight + extraSpace;
+      const totalGridSpaceNeeded = requiredHeight + 8; // add back the p-1 gap (8px)
+      
+      const spacePerPeriod = totalGridSpaceNeeded / course.duration;
+      
+      maxClassHeight = Math.max(maxClassHeight, spacePerPeriod);
+    });
+    
+    return rowDefinitions.map(r => r.type === 'break' ? 24 : maxClassHeight);
+  }, [rowDefinitions, courses, currentWeek, showWeekends]);
+
   const classToRow = useMemo(() => {
     const mapping: Record<number, number> = {};
     let currentRow = 1;
@@ -217,10 +245,10 @@ export default function ScheduleScreen({
 
   const colorMap: Record<string, { bg: string, border: string, text: string, textSecondary: string }> = {
     primary: {
-      bg: 'bg-primary/10 dark:bg-primary/20',
-      border: 'border-primary',
-      text: 'text-primary dark:text-primary',
-      textSecondary: 'text-primary/80 dark:text-primary/80'
+      bg: 'bg-blue-100 dark:bg-blue-900/30',
+      border: 'border-blue-400',
+      text: 'text-blue-600 dark:text-blue-300',
+      textSecondary: 'text-blue-600/80 dark:text-blue-300/80'
     },
     orange: {
       bg: 'bg-orange-100 dark:bg-orange-900/30',
@@ -334,7 +362,7 @@ export default function ScheduleScreen({
             className="grid bg-slate-100 dark:bg-slate-800 bg-slate-200/20 dark:bg-slate-800/40"
             style={{
               gridTemplateColumns: `3rem repeat(${daysCount}, minmax(0, 1fr))`,
-              gridTemplateRows: rowDefinitions.map(r => r.type === 'break' ? '24px' : '150px').join(' '),
+              gridTemplateRows: rowHeights.map(h => `${h}px`).join(' '),
               gap: '1px'
             }}
           >
@@ -385,7 +413,29 @@ export default function ScheduleScreen({
             {daySequence.map((dayOfWeek, dayIndex) => {
               const dayCourses = courses.filter(c => c.dayOfWeek === dayOfWeek && c.weeks.includes(currentWeek));
               return dayCourses.map(course => {
+                const isHex = course.color.startsWith('#');
                 const colors = colorMap[course.color] || colorMap.primary;
+                
+                const containerClassName = isHex 
+                  ? `h-full w-full rounded-xl border-l-4 ${showWeekends ? 'p-1' : 'p-2'} flex flex-col items-center justify-center backdrop-blur-sm shadow-sm overflow-hidden`
+                  : `h-full w-full rounded-xl ${colors.bg} border-l-4 ${colors.border} ${showWeekends ? 'p-1' : 'p-2'} flex flex-col items-center justify-center backdrop-blur-sm shadow-sm overflow-hidden`;
+                
+                const containerStyle = isHex 
+                  ? { backgroundColor: `${course.color}33`, borderLeftColor: course.color }
+                  : {};
+
+                const textClassName = isHex 
+                  ? `${showWeekends ? 'text-sm' : 'text-base'} font-bold leading-tight text-center break-all w-[2.2em] inline-block`
+                  : `${showWeekends ? 'text-sm' : 'text-base'} font-bold ${colors.text} leading-tight text-center break-all w-[2.2em] inline-block`;
+                  
+                const textStyle = isHex ? { color: course.color } : {};
+
+                const secondaryTextClassName = isHex 
+                  ? `text-[9px] leading-tight text-center break-all`
+                  : `text-[9px] leading-tight text-center break-all ${colors.textSecondary}`;
+                  
+                const secondaryTextStyle = isHex ? { color: course.color, opacity: 0.8 } : {};
+
                 return (
                   <div 
                     key={course.id} 
@@ -401,11 +451,12 @@ export default function ScheduleScreen({
                       week={currentWeek}
                       onNavigate={onNavigate} 
                       onActionRequest={setCourseActionId} 
-                      className={`h-full w-full rounded-xl ${colors.bg} border-l-4 ${colors.border} p-2 flex flex-col items-center justify-center backdrop-blur-sm shadow-sm overflow-hidden`}
+                      className={containerClassName}
+                      style={containerStyle}
                     >
                       <span 
-                        className={`text-sm font-bold ${colors.text} leading-tight text-center break-all`}
-                        style={{ writingMode: 'vertical-lr' }}
+                        className={textClassName}
+                        style={textStyle}
                       >
                         {course.name}
                       </span>
@@ -413,28 +464,14 @@ export default function ScheduleScreen({
                         className="flex flex-col items-center mt-1 opacity-80"
                         style={{ writingMode: 'vertical-lr' }}
                       >
-                        <span className={`text-[10px] ${colors.textSecondary}`}>{course.location}</span>
-                        <span className={`text-[10px] ${colors.textSecondary}`}>{course.teacher}</span>
+                        <span className={secondaryTextClassName} style={secondaryTextStyle}>{course.location}</span>
+                        <span className={secondaryTextClassName} style={secondaryTextStyle}>{course.teacher}</span>
                       </div>
                     </CourseBlock>
                   </div>
                 );
               });
             })}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider">今日剩余课程</h3>
-          <div onClick={() => onNavigate('add-note')} className="bg-white/60 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 rounded-2xl p-4 flex items-center gap-4 shadow-xl shadow-primary/5 cursor-pointer">
-            <div className="size-12 rounded-lg bg-primary flex items-center justify-center text-white">
-              <span className="material-symbols-outlined">psychology</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-bold">大学物理</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">14:00 - 15:40 | 实验楼 302 | 张老师</p>
-            </div>
-            <div className="text-primary font-bold text-xs bg-primary/10 px-2 py-1 rounded">进行中</div>
           </div>
         </div>
       </div>

@@ -1,11 +1,31 @@
 import React from 'react';
 import { ScreenType, Note } from '../App';
 
-export default function ViewNoteScreen({ onNavigate, from, note }: { 
+export default function ViewNoteScreen({ onNavigate, from, note, onDelete, onEdit, setNotes }: { 
   onNavigate: (s: ScreenType) => void, 
   from?: ScreenType,
-  note: Note
+  note: Note,
+  onDelete: (id: string) => void,
+  onEdit: (note: Note) => void,
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>
 }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+
+  const handleToggleReminder = (checked: boolean) => {
+    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, hasReminder: checked } : n));
+  };
+
+  const handleChangeReminderTime = (timeStr: string) => {
+    const reminderTime = new Date(timeStr).getTime();
+    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, reminderTime } : n));
+  };
+
+  const formatDateTimeLocal = (timestamp: number) => {
+    const d = new Date(timestamp);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark pb-24">
       <header className="sticky top-0 z-50 liquid-glass px-4 py-4 flex items-center justify-between">
@@ -61,23 +81,84 @@ export default function ViewNoteScreen({ onNavigate, from, note }: {
                 <span className="text-xs text-slate-500 dark:text-slate-400">开启后将通过系统推送提醒</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={note.hasReminder || false} 
+                  onChange={(e) => handleToggleReminder(e.target.checked)} 
+                />
                 <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            <div className="flex items-center justify-between p-4 hover:bg-slate-500/5 transition-colors cursor-pointer">
-              <div className="flex flex-col">
-                <span className="font-medium">提醒时间</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">ddl来的</span>
+            {note.hasReminder && (
+              <div className="flex items-center justify-between p-4 hover:bg-slate-500/5 transition-colors cursor-pointer relative">
+                <div className="flex flex-col">
+                  <span className="font-medium">提醒时间</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">设置具体时间</span>
+                </div>
+                <div className="flex items-center gap-2 text-primary font-medium">
+                  <input 
+                    type="datetime-local" 
+                    value={note.reminderTime ? formatDateTimeLocal(note.reminderTime) : formatDateTimeLocal(Date.now() + 86400000)}
+                    onChange={e => handleChangeReminderTime(e.target.value)}
+                    className="bg-transparent border-none outline-none text-right text-primary cursor-pointer"
+                  />
+                  <span className="material-symbols-outlined text-slate-400">chevron_right</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-primary font-medium">
-                <span>明天 09:00</span>
-                <span className="material-symbols-outlined text-slate-400">chevron_right</span>
-              </div>
-            </div>
+            )}
           </div>
         </section>
+
+        <div className="px-4 mt-8 flex gap-4">
+          <button 
+            onClick={() => onEdit(note)}
+            className="flex-1 py-3 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-sm">edit</span>
+            编辑
+          </button>
+          <button 
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex-1 py-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-sm">delete</span>
+            删除
+          </button>
+        </div>
       </main>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-[2px]">
+          <div className="liquid-glass w-full max-w-sm rounded-2xl overflow-hidden flex flex-col items-center p-6 animate-in fade-in zoom-in duration-300">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4 text-red-500">
+              <span className="material-symbols-outlined text-2xl">delete</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">删除随记</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center">
+              确定要删除这条随记吗？<br/>此操作无法撤销。
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)} 
+                className="flex-1 h-12 rounded-xl bg-slate-200/50 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
+              >
+                取消
+              </button>
+              <button 
+                onClick={() => {
+                  onDelete(note.id);
+                  setShowDeleteConfirm(false);
+                }} 
+                className="flex-1 h-12 rounded-xl bg-red-500 text-white font-bold shadow-lg shadow-red-500/30 hover:bg-red-600 transition-transform active:scale-95"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
